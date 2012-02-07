@@ -1,6 +1,5 @@
 package kr.co.ddononi;
 
-import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;
@@ -16,25 +15,34 @@ import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
-import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
+import java.util.Vector;
 
 import javax.imageio.ImageIO;
+import javax.swing.text.AbstractDocument.Content;
 
 import net.htmlparser.jericho.Element;
 import net.htmlparser.jericho.HTMLElementName;
+import net.htmlparser.jericho.Segment;
 import net.htmlparser.jericho.Source;
 
+import org.apache.http.HttpEntity;
+import org.apache.http.NameValuePair;
 import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.HttpClient;
+import org.apache.http.client.ResponseHandler;
+import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.HttpPost;
+import org.apache.http.client.utils.URLEncodedUtils;
 import org.apache.http.entity.mime.HttpMultipartMode;
 import org.apache.http.entity.mime.MultipartEntity;
 import org.apache.http.entity.mime.content.FileBody;
 import org.apache.http.entity.mime.content.StringBody;
 import org.apache.http.impl.client.BasicResponseHandler;
 import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.message.BasicNameValuePair;
+import org.omg.CORBA.Request;
 
 
 public class MySweeper {
@@ -42,12 +50,13 @@ public class MySweeper {
 		System.out.println("-------------------------------");
 		System.out.println("              TuTuSweeper      ");
 		System.out.println("-------------------------------");
-		System.out.println("     게시판주소로 스윕하기 1번         ");
-		System.out.println("     아이디값으로 스윕하기 2번         ");
+		System.out.println("     게시판주소로 스윕하기 1번                       ");
+		System.out.println("     아이디값으로 스윕하기 2번                       ");
+		System.out.println("     디렉토리 설정하기       3번                       ");
 		System.out.println("-------------------------------");
-		System.out.println("   made by ddononi (ver 1.00)  ");
+		System.out.println("   made by ddononi (ver 1.10)  ");
 		System.out.println("-------------------------------");
-		System.out.print  ("     메뉴를 입력하세요 :         ");
+		System.out.print  ("     메뉴를 입력하세요 :              ");
 //		String s = "<script>document.domain='fewoo.net';</script>		<script language=\"JavaScript\">\n"
 //		+ "window.opener.insertImageSrc(\"http://club.fewoo.net/dramaworld/data/__132808007733647.jpg\");\n;"
 //		+ "window.close();</script>";
@@ -76,7 +85,6 @@ public class MySweeper {
 
 				TuTuSweeper sp = new TuTuSweeper();
 				sp.getStartContent(line);
-
 				long endTime = System.currentTimeMillis();
 				endTime = (endTime - startTime);
 				System.out.println("자료 수집 시간 : " + endTime + "Millis" );
@@ -194,7 +202,13 @@ class TuTuSweeper{
 	public final static int MAX_UPLOAD_SIZE = 737280;					// 최대 파일 크기
 	public final static String NO_PARTNER =
 			"http://webimage.tutudisk.com/icon/icon_off.gif";			// 노제휴 나무 이미지
-
+	public final static String MY_TAG = "[☆드짱☆]";
+	public final static String TAIL_TAG =								// 꼬리 태크
+			"<img border=0 src='http://club.fewoo.net/dramaworld/data/__132838044794385.gif'" +
+			" onload='javascript:if(this.width>600) this.width=600;'><BR>";
+	public final static String CHECK_ID_URL =							// tutu id check url
+			"http://ddononi.cafe24.com/tutu/tutu.php";
+	
 	public TuTuSweeper(){
 	}
 
@@ -207,7 +221,7 @@ class TuTuSweeper{
 		int year = cal.get(Calendar.YEAR);
 		int month = cal.get(Calendar.MONTH) + 1;
 		int day = cal.get(Calendar.DAY_OF_MONTH);
-		StringBuilder sb = new StringBuilder("D:\\tmp");
+		StringBuilder sb = new StringBuilder("D:\\tmp6");
 		sb.append(File.separator);
 		/*
 		sb.append(year);
@@ -351,7 +365,7 @@ class TuTuSweeper{
 				}else if(width.contains("605")){
 					// 타이틀명을 가져온후 좌우 공백제거
 					title = elem.getAttributeValue("title").toString().trim();
-					System.out.println("제목 : " + title);
+					//System.out.println("제목 : " + title);
 				}
 			}
 		} catch (MalformedURLException e) {
@@ -362,15 +376,74 @@ class TuTuSweeper{
 			e.printStackTrace();
 		}
 
-		return title/*.replace(".", "")*/.replace("/", "//");
+		return MY_TAG + title/*.replace(".", "")*/.replace("/", "").replace(":", "_");
 	}
+	
+	private TuTuExtraInfo getCategory(){
+		TuTuExtraInfo info = new TuTuExtraInfo();
+		info.setTitle(this.getTitle());
+		try {
+			Source source = new Source(new URL(TUTU_URL+ this.id));
+			source.fullSequentialParse();
+			List<Element> rootList = source.getAllElements(HTMLElementName.TD);
+			String width, bgcolor;
+			int index = 0;
+			for(Element elem : rootList){
+				width = elem.getAttributeValue("width");
+				bgcolor = elem.getAttributeValue("bgcolor");
+				if(width == null || bgcolor == null) {
+					continue;
+				}else if(width.contains("135") && bgcolor.contains("#FFFFFF")){
+					Segment seg;
+					String tmpStr;
+					if(index == 0){
+						// 아이디값을 가져올수 있으나 불필요....
+					}else if(index == 1){
+						seg = elem.getContent();
+						tmpStr = seg.toString();
+						String size = null;
+						try{
+							size = tmpStr.split("<span class=\"gc\">/</span>")[1].trim();
+							info.setSize(size);
+						}catch(Exception e){
+							return null;
+						}
+						System.out.println("사이즈 : " + size);
+					}else if(index == 2){
+						seg = elem.getContent();
+						tmpStr = seg.toString();
+						String category = tmpStr.replace("&nbsp;", " ").trim();
+						System.out.println("분류 : " + category);
+						info.setCategory(category);
+					}
+					index++;
+				}
+			}
+		} catch (MalformedURLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
+		return info;
+	}	
 
 	public void getStartContent(final String id){
 		this.id = id;
+		TuTuExtraInfo info = getCategory();
+		// ID값을 서버에 전송후 중복체크
+		if( !registerToDB(id, info) ){
+			System.out.println(id + "는 중복된 파일입니다.");
+			return;
+		}
+		
 		makeDir();	// 디렉토리를 만든후
 		try {
 			Source source = new Source(new URL(TUTU_URL + id));
 			source.fullSequentialParse();
+			// td node 뽑기
 			List<Element> tdList = source.getAllElements(HTMLElementName.TD);
 			for(Element elem : tdList){
 				String style = elem.getAttributeValue("style");
@@ -384,6 +457,12 @@ class TuTuSweeper{
 					contents = contents.replaceAll("<IMG ([^>]+)>", "");
 					List<Element> imageList = elem.getAllElements(HTMLElementName.IMG);	// 이미지만 추출
 					String uploadTag = "";
+					
+					//	이미지 tag들을 돌면서 src 속성의 이미지url을 뽑아 온다.
+					//	실제 이미지 주소를 찾으면 파일로 저장한후 저장된 파일이 지정된 크기보다 크면
+					//	BufferedImage를 이용하여 이미지 크기를 줄인후 원하드서버에 업로드한다.
+					//	원하드 서버에 업로드가 완료되면 업로드된 이미지tag를 뽑아온 컨탠트에 붙이고
+					//	tail_tag를 달아준후 텍스트 파일로 저장한다.
 					for(Element subElem : imageList){
 						String src = subElem.getAttributeValue("src");
 						if(src == null) {
@@ -406,7 +485,7 @@ class TuTuSweeper{
 							uploadTag += uploadImage(file);
 						}
 					}
-					doSaveFile(uploadTag + contents);	// 내용 저장
+					doSaveFile(uploadTag + contents + TAIL_TAG);	// 내용 저장
 				}
 			}
 		} catch (MalformedURLException e) {
@@ -419,7 +498,7 @@ class TuTuSweeper{
 	}
 
 	public void getStartMultiContents(final String url){
-		ArrayList<Content> contentsList = new ArrayList<Content>();
+		//ArrayList<Content> contentsList = new ArrayList<Content>();
 		try {
 			Source source = new Source(new URL(url));
 			source.fullSequentialParse();
@@ -436,7 +515,6 @@ class TuTuSweeper{
 							continue;
 						}else if(src.contains(NO_PARTNER)){
 							// 제휴 컨탠츠가 아닌경우만
-							Content c = new Content();
 							String id = elem.getAttributeValue("id").replace("full_title_", "");
 							getStartContent(id);
 						}
@@ -508,6 +586,7 @@ class TuTuSweeper{
 		    	    tag = "<img src='http://" + src.replace(")", "").replace("\"", "")
 		    				 +"' border='0' onLoad='javascript:"
 		    				 +"if(this.width>600) this.width=600;'><br>";
+		    				 
 		    	    System.out.println(tag);
             	}catch(IndexOutOfBoundsException ibe){
             		 System.out.println(responseBody);
@@ -533,21 +612,70 @@ class TuTuSweeper{
 
         return tag;
 	}
+	
+	/**
+	 * 이전에 저장된 컨탠츠인지 아이디값으로 체크한다.
+	 * 서버에 아이디값, 제목, 카테고리, 컨탠트 총 크기를
+	 *  보내면 DB에서 아이디값을 체크후 값반환
+ 	 * @param id
+ 	 * 	검색할 아이디값
+	 * @return
+	 * 	아이디값이 잇으면 false otherwise true
+	 */
+	static public boolean registerToDB(final String id, final TuTuExtraInfo info){
+		if(info == null){
+			return false;
+		}
+        // post 방식으로 전송
+        Vector<NameValuePair> vars = new Vector<NameValuePair>();
+        vars.add(new BasicNameValuePair("idx", id));
+        vars.add(new BasicNameValuePair("title", info.getTitle() ));
+        vars.add(new BasicNameValuePair("category", info.getCategory() ));
+        vars.add(new BasicNameValuePair("size", info.getSize() ));
+        
+        HttpPost request = new HttpPost(CHECK_ID_URL);
+        HttpClient client = new DefaultHttpClient();
+        try {
+        	request.setEntity(new UrlEncodedFormEntity(vars, "utf-8"));
+            ResponseHandler<String> responseHandler = new BasicResponseHandler();
+            String responseBody = client.execute(request, responseHandler);
 
+            // 정상적으로 등록시 업로드된 이미지 url을 찾아서 img tag로 만들어 준후
+            // content 파일에 넣어주어 나중에 content파일 내용을 복사하여 붙여넣기로
+            // 할수 있도록 만든다.
+            if (responseBody.equalsIgnoreCase("empty")) {	// ID가 없다면 true
+            	return true;
+            }else{
+            	 System.out.println(responseBody);
+            }
+        } catch (ClientProtocolException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+		return false;
+		
+	}
+
+	/**
+	 * 이미지 리사이즈 하기
+	 * @param originalImage
+	 *	원본 이미지
+	 * @param type
+	 *	이미지 타입
+	 * @return
+	 * 		리사이즈된 BufferedImage
+	 */
 	private static BufferedImage resizeImage(final BufferedImage originalImage, final int type){
 		int width = (int) (originalImage.getWidth() * .8);
 		int height = (int) (originalImage.getHeight() * .8);
 		BufferedImage resizedImage = new BufferedImage(width, height, type);
+		/*
 		Graphics2D g = resizedImage.createGraphics();
 		g.drawImage(originalImage, 0, 0, width, height, null);
 		g.dispose();
-
+		*/
 		return resizedImage;
-	}
-
-	public class Content{
-		String id;
-		boolean partnership;
-		int size;
 	}
 }
