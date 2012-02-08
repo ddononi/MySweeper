@@ -357,12 +357,14 @@ class TuTuSweeper{
 		} catch (MalformedURLException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
+			return null;
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
+			return null;
 		}
 
-		return title/*.replace(".", "")*/.replace("/", "//");
+		return title.replace(".", "").replace("/", "//");
 	}
 
 	public void getStartContent(final String id){
