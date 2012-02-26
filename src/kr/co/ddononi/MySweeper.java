@@ -74,7 +74,7 @@ public class MySweeper {
 			while(true){
 				System.out.print("아이디를 입력하세요 : ");
 				line = "";
-					line = reader.readLine();
+					line = reader.readLine().trim();
 				if(line.equalsIgnoreCase("bye")){ //	종료
 					break;
 				}else if(line.length() < 5){
@@ -221,7 +221,7 @@ class TuTuSweeper{
 		int year = cal.get(Calendar.YEAR);
 		int month = cal.get(Calendar.MONTH) + 1;
 		int day = cal.get(Calendar.DAY_OF_MONTH);
-		StringBuilder sb = new StringBuilder("D:\\tmp6");
+		StringBuilder sb = new StringBuilder("D:\\tmp");
 		sb.append(File.separator);
 		/*
 		sb.append(year);
@@ -433,13 +433,9 @@ class TuTuSweeper{
 	public void getStartContent(final String id){
 		this.id = id;
 		TuTuExtraInfo info = getCategory();
-		// ID값을 서버에 전송후 중복체크
-		if( !registerToDB(id, info) ){
-			System.out.println(id + "는 중복된 파일입니다.");
-			return;
-		}
 		
 		makeDir();	// 디렉토리를 만든후
+		String contentHtml = "";
 		try {
 			Source source = new Source(new URL(TUTU_URL + id));
 			source.fullSequentialParse();
@@ -485,9 +481,16 @@ class TuTuSweeper{
 							uploadTag += uploadImage(file);
 						}
 					}
-					doSaveFile(uploadTag + contents + TAIL_TAG);	// 내용 저장
+					contentHtml = uploadTag + contents + TAIL_TAG;	// 컨탠츠 내용
+					doSaveFile(contentHtml);	// 내용 저장
 				}
 			}
+			info.setContent(contentHtml);
+			// ID값을 서버에 전송후 중복체크
+			if( !registerToDB(id, info) ){
+				System.out.println(id + "는 중복된 파일입니다.");
+				//return;
+			}			
 		} catch (MalformedURLException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -630,6 +633,7 @@ class TuTuSweeper{
         Vector<NameValuePair> vars = new Vector<NameValuePair>();
         vars.add(new BasicNameValuePair("idx", id));
         vars.add(new BasicNameValuePair("title", info.getTitle() ));
+        vars.add(new BasicNameValuePair("content", info.getContent() ));
         vars.add(new BasicNameValuePair("category", info.getCategory() ));
         vars.add(new BasicNameValuePair("size", info.getSize() ));
         
