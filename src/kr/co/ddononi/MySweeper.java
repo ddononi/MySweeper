@@ -371,9 +371,11 @@ class TuTuSweeper{
 		} catch (MalformedURLException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
+			return null;
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
+			return null;
 		}
 
 		return MY_TAG + title/*.replace(".", "")*/.replace("/", "").replace(":", "_");
