@@ -20,21 +20,18 @@ import java.util.List;
 import java.util.Vector;
 
 import javax.imageio.ImageIO;
-import javax.swing.text.AbstractDocument.Content;
 
 import net.htmlparser.jericho.Element;
 import net.htmlparser.jericho.HTMLElementName;
 import net.htmlparser.jericho.Segment;
 import net.htmlparser.jericho.Source;
 
-import org.apache.http.HttpEntity;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.ResponseHandler;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.HttpPost;
-import org.apache.http.client.utils.URLEncodedUtils;
 import org.apache.http.entity.mime.HttpMultipartMode;
 import org.apache.http.entity.mime.MultipartEntity;
 import org.apache.http.entity.mime.content.FileBody;
@@ -42,7 +39,6 @@ import org.apache.http.entity.mime.content.StringBody;
 import org.apache.http.impl.client.BasicResponseHandler;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.message.BasicNameValuePair;
-import org.omg.CORBA.Request;
 
 
 public class MySweeper {
@@ -74,13 +70,13 @@ public class MySweeper {
 			while(true){
 				System.out.print("아이디를 입력하세요 : ");
 				line = "";
-					line = reader.readLine();
+					line = reader.readLine().trim();
 				if(line.equalsIgnoreCase("bye")){ //	종료
 					break;
 				}else if(line.length() < 5){
 					continue;
 				}
-			// 시작 시간 체크
+				// 시작 시간 체크
 				long startTime = System.currentTimeMillis();
 
 				TuTuSweeper sp = new TuTuSweeper();
@@ -208,7 +204,7 @@ class TuTuSweeper{
 			" onload='javascript:if(this.width>600) this.width=600;'><BR>";
 	public final static String CHECK_ID_URL =							// tutu id check url
 			"http://ddononi.cafe24.com/tutu/tutu.php";
-	
+
 	public TuTuSweeper(){
 	}
 
@@ -221,7 +217,7 @@ class TuTuSweeper{
 		int year = cal.get(Calendar.YEAR);
 		int month = cal.get(Calendar.MONTH) + 1;
 		int day = cal.get(Calendar.DAY_OF_MONTH);
-		StringBuilder sb = new StringBuilder("D:\\tmp6");
+		StringBuilder sb = new StringBuilder("E:\\tmp5");
 		sb.append(File.separator);
 		/*
 		sb.append(year);
@@ -337,8 +333,13 @@ class TuTuSweeper{
 			return null;
 		}finally{
 			try {
-				imageFile.close();
-				bis.close();
+				if(imageFile != null){
+					imageFile.close();
+				}
+
+				if(bis != null){
+					bis.close();
+				}
 			} catch (IOException e) {}
 		}
 		return file;
@@ -378,13 +379,9 @@ class TuTuSweeper{
 			return null;
 		}
 
-<<<<<<< HEAD
-		return title.replace(".", "").replace("/", "//");
-=======
 		return MY_TAG + title/*.replace(".", "")*/.replace("/", "").replace(":", "_");
->>>>>>> 4779ec4adcfd034c852d77d675e18fca6afe7d0f
 	}
-	
+
 	private TuTuExtraInfo getCategory(){
 		TuTuExtraInfo info = new TuTuExtraInfo();
 		info.setTitle(this.getTitle());
@@ -434,7 +431,7 @@ class TuTuSweeper{
 		}
 
 		return info;
-	}	
+	}
 
 	public void getStartContent(final String id){
 		this.id = id;
@@ -444,7 +441,7 @@ class TuTuSweeper{
 			System.out.println(id + "는 중복된 파일입니다.");
 			return;
 		}
-		
+
 		makeDir();	// 디렉토리를 만든후
 		try {
 			Source source = new Source(new URL(TUTU_URL + id));
@@ -463,7 +460,7 @@ class TuTuSweeper{
 					contents = contents.replaceAll("<IMG ([^>]+)>", "");
 					List<Element> imageList = elem.getAllElements(HTMLElementName.IMG);	// 이미지만 추출
 					String uploadTag = "";
-					
+
 					//	이미지 tag들을 돌면서 src 속성의 이미지url을 뽑아 온다.
 					//	실제 이미지 주소를 찾으면 파일로 저장한후 저장된 파일이 지정된 크기보다 크면
 					//	BufferedImage를 이용하여 이미지 크기를 줄인후 원하드서버에 업로드한다.
@@ -592,7 +589,7 @@ class TuTuSweeper{
 		    	    tag = "<img src='http://" + src.replace(")", "").replace("\"", "")
 		    				 +"' border='0' onLoad='javascript:"
 		    				 +"if(this.width>600) this.width=600;'><br>";
-		    				 
+
 		    	    System.out.println(tag);
             	}catch(IndexOutOfBoundsException ibe){
             		 System.out.println(responseBody);
@@ -618,7 +615,7 @@ class TuTuSweeper{
 
         return tag;
 	}
-	
+
 	/**
 	 * 이전에 저장된 컨탠츠인지 아이디값으로 체크한다.
 	 * 서버에 아이디값, 제목, 카테고리, 컨탠트 총 크기를
@@ -638,7 +635,7 @@ class TuTuSweeper{
         vars.add(new BasicNameValuePair("title", info.getTitle() ));
         vars.add(new BasicNameValuePair("category", info.getCategory() ));
         vars.add(new BasicNameValuePair("size", info.getSize() ));
-        
+
         HttpPost request = new HttpPost(CHECK_ID_URL);
         HttpClient client = new DefaultHttpClient();
         try {
@@ -661,7 +658,7 @@ class TuTuSweeper{
         }
 
 		return false;
-		
+
 	}
 
 	/**
